@@ -6,6 +6,11 @@
 
 matrix mean(matrix x, int spatial)
 {
+    // x.rows = # of images in a batch
+    // x.cols = every pixel of every channel in a single image
+
+    // m should be
+    // 1 by # of channels
     matrix m = make_matrix(1, x.cols/spatial);
     int i, j;
     for(i = 0; i < x.rows; ++i){
@@ -23,6 +28,19 @@ matrix variance(matrix x, matrix m, int spatial)
 {
     matrix v = make_matrix(1, x.cols/spatial);
     // TODO: 7.1 - calculate variance
+    int i, j;
+    float pre_squared;
+    for(i = 0; i < x.rows; ++i){
+        for(j = 0; j < x.cols; ++j){
+            pre_squared = (x.data[i*x.cols + j] - m.data[j/spatial]);
+            v.data[j/spatial] += pre_squared * pre_squared;
+        }
+    }
+
+    // divide by m which is the # of items in batch
+    for(i = 0; i < v.cols; ++i){
+        v.data[i] = v.data[i] / x.rows / spatial;
+    }
     return v;
 }
 

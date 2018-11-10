@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <math.h>
 
+#define EPSILON .001
+
 matrix mean(matrix x, int spatial)
 {
     // x.rows = # of images in a batch
@@ -47,7 +49,17 @@ matrix variance(matrix x, matrix m, int spatial)
 matrix normalize(matrix x, matrix m, matrix v, int spatial)
 {
     matrix norm = make_matrix(x.rows, x.cols);
-    // TODO: 7.2 - normalize array, norm = (x - mean) / sqrt(variance + eps)
+    // TODO: 7.2 - normalize array, 
+    // norm = (x - mean) / sqrt(variance + eps)
+    int i, j;
+    for(i = 0; i < x.rows; ++i){
+        for(j = 0; j < x.cols; ++j){
+            norm.data[i*x.cols+j] 
+                = x.data[i*x.cols+j] - m.data[j/spatial];
+            norm.data[i*x.cols+j] /= sqrt(v.data[j/spatial] + EPSILON);
+        }
+    }
+
     return norm;
     
 }

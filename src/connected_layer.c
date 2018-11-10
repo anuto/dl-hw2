@@ -40,6 +40,10 @@ matrix forward_connected_layer(layer l, matrix in)
     // TODO: 3.1 - run the network forward
     //matrix out = make_matrix(in.rows, l.w.cols); // Going to want to change this!
     matrix out = matmul(in, l.w);
+    if(l.batchnorm){
+        matrix xnorm = batch_normalize_forward(l, out);
+        out = xnorm;
+    }
     forward_bias(out, l.b);
     activate_matrix(out, l.activation);
 
@@ -117,6 +121,9 @@ layer make_connected_layer(int inputs, int outputs, ACTIVATION activation)
     l.forward  = forward_connected_layer;
     l.backward = backward_connected_layer;
     l.update   = update_connected_layer;
+    l.x = calloc(1, sizeof(matrix));
+    l.rolling_mean = make_matrix(1, outputs);
+    l.rolling_variance = make_matrix(1, outputs);
     return l;
 }
 

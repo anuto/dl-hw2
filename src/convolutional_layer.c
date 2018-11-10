@@ -183,6 +183,10 @@ matrix forward_convolutional_layer(layer l, matrix in)
         free_matrix(x);
         free_matrix(wx);
     }
+    if(l.batchnorm){
+        matrix xnorm = batch_normalize_forward(l, out);
+        out = xnorm;
+    }
     forward_convolutional_bias(out, l.b);
     activate_matrix(out, l.activation);
 
@@ -279,6 +283,16 @@ layer make_convolutional_layer(int w, int h, int c, int filters, int size, int s
     l.forward  = forward_convolutional_layer;
     l.backward = backward_convolutional_layer;
     l.update   = update_convolutional_layer;
+
+    // Zach: these may not be right
+    // TOASK: l.x represents input to batch norm process
+    // how is it different from l.input? 
+    l.x = calloc(1, sizeof(matrix)); 
+
+    // normalize(x, l.rolling_mean, l.rolling_variance, spatial);
+    // rolling mean and rolling variance are ? by # of filters
+    l.rolling_mean = make_matrix(1, filters);
+    l.rolling_variance = make_matrix(1, filters);
     return l;
 }
 

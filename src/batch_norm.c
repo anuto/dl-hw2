@@ -47,6 +47,10 @@ matrix variance(matrix x, matrix m, int spatial)
     return v;
 }
 
+
+// normalize(x, l.rolling_mean, l.rolling_variance, spatial);
+// rolling mean and rolling variance are 1 by # of filters/channels
+// x is 
 matrix normalize(matrix x, matrix m, matrix v, int spatial)
 {
     matrix norm = make_matrix(x.rows, x.cols);

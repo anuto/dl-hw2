@@ -46,12 +46,62 @@ matrix im2col(image im, int size, int stride)
     int outh = (im.h-1)/stride + 1;
     int rows = im.c*size*size;
     int cols = outw * outh;
-    matrix col = make_matrix(rows, cols);
+    matrix output = make_matrix(rows, cols);
 
     // TODO: 5.1 - fill in the column matrix
+    int cur_row;
+    int cur_col;
+    int channel;
+    int size_squared = size * size;
+    int filter_col;
+    int filter_row;
+    int current_out_index = 0;
 
-    return col;
+    // for every channel in the image
+    for(channel = 0; channel < im.c; channel++) {
+        image channel_im = get_channel(im, channel);
+
+        // for each square in the filter (starting at top left, => bottom right)
+        for(filter_row = -size / 2; filter_row < size / 2; filter_row++) {
+            
+            for(filter_col = - size / 2; filter_col < size / 2; filter_col++) {
+                
+                // go through all the rows
+                // iterations = OUTH but this makes indexing original img simpler
+                for(cur_row = 0; cur_row < im.w; cur_row += stride) {
+
+                    // go through a single row
+                    // iterations = OUTH but this makes indexing original img simpler
+                    for(cur_col = 0; cur_col < im.h; cur_col += stride) {
+                        // find center
+                        // center is at row_col, cur_col
+
+                        // find square of filter_index relstive to center
+                        // 3x3: pos from center
+                        int adjusted_col = cur_col + filter_col;
+                        int adjusted_row = cur_row + filter_row;
+
+                        // float get_pixel(image im, int x, int y, int c)
+                        // will handle the 0 case automatically #padding :)
+                        if(adjusted_row < 0 || adjusted_col < 0 || adjusted_row >= im.h || adjusted_col >= im.w) {
+                            output.data[current_out_index] = 0;
+
+                        } else {
+                            output.data[current_out_index] = get_pixel(im, adjusted_col,adjusted_row, channel);
+
+                        }
+                        current_out_index++;
+                    }
+                }
+            }
+        }
+
+    }
+    // printf("did we make it boiz???\n");
+    return output;
 }
+
+
 
 // The reverse of im2col, add elements back into image
 // matrix col: column matrix to put back into image
@@ -65,8 +115,52 @@ void col2im(matrix col, int size, int stride, image im)
     int rows = im.c*size*size;
     int cols = outw * outh;
 
-    // TODO: 5.2 - add values into image im from the column matrix
+    int cur_row;
+    int cur_col;
+    int channel;
+    int size_squared = size * size;
 
+    int filter_col;
+    int filter_row = 0;
+    int current_out_index = 0;
+
+    // TODO: 5.2 - add values into image im from the column matrix
+    for(channel = 0; channel < im.c; channel++) {
+        image channel_im = get_channel(im, channel);
+        // for each square in the filter (starting at top left, => bottom right)
+        for(filter_row = -size / 2; filter_row < size / 2; filter_row++) {
+        
+            for(filter_col = - size / 2; filter_col < size / 2; filter_col++) {
+            
+                // go through all the rows
+                // iterations = OUTH but this makes indexing original img simpler
+                for(cur_row = 0; cur_row < im.w; cur_row += stride) {
+
+                    // go through a single row
+                    // iterations = OUTH but this makes indexing original img simpler
+                    for(cur_col = 0; cur_col < im.h; cur_col += stride) {
+                        // find center
+                        // center is at row_col, cur_col
+
+                        // find square of filter_index relstive to center
+                        // 3x3: pos from center
+                        int adjusted_col = cur_col + filter_col;
+                        int adjusted_row = cur_row + filter_row;
+
+                        // float get_pixel(image im, int x, int y, int c)
+                        // will handle the 0 case automatically #padding :)
+                        
+                        // void set_pixel(image im, int x, int y, int c, float v)
+                        float val = col.data[current_out_index];
+                        current_out_index++;
+                        if(adjusted_row >= 0 || adjusted_col >= 0 || adjusted_row < im.h || adjusted_col < im.w) {
+                            set_pixel(im, adjusted_col, adjusted_row, channel, val);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Run a convolutional layer on input
@@ -151,6 +245,12 @@ void backward_convolutional_layer(layer l, matrix prev_delta)
 void update_convolutional_layer(layer l, float rate, float momentum, float decay)
 {
     // TODO: 5.3 Update the weights, similar to the connected layer.
+    axpy_matrix(rate, l.db, l.b);
+    scal_matrix(momentum, l.db);
+
+    axpy_matrix(-decay, l.w, l.dw);
+    axpy_matrix(rate, l.dw, l.w);
+    scal_matrix(momentum, l.dw);
 }
 
 // Make a new convolutional layer

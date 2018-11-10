@@ -8,8 +8,9 @@
 
 matrix mean(matrix x, int spatial)
 {
-    // x.rows = # of images in a batch
+    // x.rows = # of images (in a batch)
     // x.cols = every pixel of every channel in a single image
+    // spatial = # of elements in a channel (W x H of an image)
 
     // m should be
     // 1 by # of channels

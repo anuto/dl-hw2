@@ -29,7 +29,7 @@ void try_mnist()
     printf("Training accuracy: %f\n", accuracy_net(n, train));
     printf("Testing  accuracy: %f\n", accuracy_net(n, test));
 }
-
+/*
 int main(int argc, char **argv)
 {
     if(argc < 2){
@@ -40,4 +40,4 @@ int main(int argc, char **argv)
         run_tests();
     }
     return 0;
-}
+}*/

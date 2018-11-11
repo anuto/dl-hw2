@@ -101,6 +101,15 @@ matrix delta_mean(matrix d, matrix variance, int spatial)
 {
     matrix dm = make_matrix(1, variance.cols);
     // TODO: 7.3 - calculate dL/dmean
+    int i, j;
+    // TODO verify dimensions of d
+    // 1 x # images in a mini batch?
+    for(i = 0; i < d.rows; ++i){
+        for (j = 0; j < d.cols; ++j){
+            dm.data[j/spatial] += d.data[i*d.cols + j] 
+                * (-1 / sqrt(variance.data[j/spatial] + EPSILON));
+        }
+    }
     return dm;
 }
 
@@ -108,6 +117,16 @@ matrix delta_variance(matrix d, matrix x, matrix mean, matrix variance, int spat
 {
     matrix dv = make_matrix(1, variance.cols);
     // TODO: 7.4 - calculate dL/dvariance
+    int i, j;
+    for(i = 0; i < d.rows; ++i){
+        for (j = 0; j < d.cols; ++j){
+            dv.data[j/spatial] += d.data[i*x.cols + j] 
+                * (x.data[i*x.cols + j] - mean.data[j/spatial]) 
+                * -.5
+                * pow((variance.data[j/spatial] + EPSILON), -1.5);
+        }
+    }
+
     return dv;
 }
 
@@ -116,6 +135,14 @@ matrix delta_batch_norm(matrix d, matrix dm, matrix dv, matrix mean, matrix vari
     int i, j;
     matrix dx = make_matrix(d.rows, d.cols);
     // TODO: 7.5 - calculate dL/dx
+
+    for(i = 0; i < d.rows; ++i){
+        for(j = 0; j < d.cols; ++j){
+            dx.data[i*d.cols + j] = d.data[i*d.cols + j] * (1 / sqrt(variance.data[j/spatial] + EPSILON))
+                + dv.data[j/spatial] * 2 * (x.data[i*x.cols + j] - mean.data[j/spatial]) / (x.rows / spatial)
+                + dm.data[j/spatial] / (x.rows / spatial);
+        }
+    }
     return dx;
 }
 

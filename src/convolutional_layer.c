@@ -52,15 +52,12 @@ matrix im2col(image im, int size, int stride)
     int cur_row;
     int cur_col;
     int channel;
-    int size_squared = size * size;
     int filter_col;
     int filter_row;
     int current_out_index = 0;
 
     // for every channel in the image
     for(channel = 0; channel < im.c; channel++) {
-        image channel_im = get_channel(im, channel);
-
         // for each square in the filter (starting at top left, => bottom right)
         for(filter_row = -size / 2; filter_row < size / 2; filter_row++) {
             
@@ -110,15 +107,9 @@ matrix im2col(image im, int size, int stride)
 // image im: image to add elements back into
 void col2im(matrix col, int size, int stride, image im)
 {
-    int outw = (im.w-1)/stride + 1;
-    int outh = (im.h-1)/stride + 1;
-    int rows = im.c*size*size;
-    int cols = outw * outh;
-
     int cur_row;
     int cur_col;
     int channel;
-    int size_squared = size * size;
 
     int filter_col;
     int filter_row = 0;
@@ -126,7 +117,6 @@ void col2im(matrix col, int size, int stride, image im)
 
     // TODO: 5.2 - add values into image im from the column matrix
     for(channel = 0; channel < im.c; channel++) {
-        image channel_im = get_channel(im, channel);
         // for each square in the filter (starting at top left, => bottom right)
         for(filter_row = -size / 2; filter_row < size / 2; filter_row++) {
         
@@ -212,6 +202,13 @@ void backward_convolutional_layer(layer l, matrix prev_delta)
 
     gradient_matrix(out, l.activation, delta);
     backward_convolutional_bias(delta, l.db);
+
+    if (l.batchnorm){
+        matrix dx = batch_normalize_backward(l, delta);
+        free_matrix(delta);
+        l.delta[0] = delta = dx;
+    }
+
     int i;
     matrix wt = transpose_matrix(l.w);
     for(i = 0; i < in.rows; ++i){

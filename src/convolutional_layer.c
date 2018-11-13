@@ -42,63 +42,30 @@ void backward_convolutional_bias(matrix delta, matrix db)
 // returns: column matrix
 matrix im2col(image im, int size, int stride)
 {
+    int i, j, k;
     int outw = (im.w-1)/stride + 1;
     int outh = (im.h-1)/stride + 1;
     int rows = im.c*size*size;
     int cols = outw * outh;
-    matrix output = make_matrix(rows, cols);
-
-    // TODO: 5.1 - fill in the column matrix
-    int cur_row;
-    int cur_col;
-    int channel;
-    int filter_col;
-    int filter_row;
-    int current_out_index = 0;
-
-    // for every channel in the image
-    for(channel = 0; channel < im.c; channel++) {
-        // for each square in the filter (starting at top left, => bottom right)
-        for(filter_row = -size / 2; filter_row < size / 2; filter_row++) {
-            
-            for(filter_col = - size / 2; filter_col < size / 2; filter_col++) {
-                
-                // go through all the rows
-                // iterations = OUTH but this makes indexing original img simpler
-                for(cur_row = 0; cur_row < im.w; cur_row += stride) {
-
-                    // go through a single row
-                    // iterations = OUTH but this makes indexing original img simpler
-                    for(cur_col = 0; cur_col < im.h; cur_col += stride) {
-                        // find center
-                        // center is at row_col, cur_col
-
-                        // find square of filter_index relstive to center
-                        // 3x3: pos from center
-                        int adjusted_col = cur_col + filter_col;
-                        int adjusted_row = cur_row + filter_row;
-
-                        // float get_pixel(image im, int x, int y, int c)
-                        // will handle the 0 case automatically #padding :)
-                        if(adjusted_row < 0 || adjusted_col < 0 || adjusted_row >= im.h || adjusted_col >= im.w) {
-                            output.data[current_out_index] = 0;
-
-                        } else {
-                            output.data[current_out_index] = get_pixel(im, adjusted_col,adjusted_row, channel);
-
-                        }
-                        current_out_index++;
-                    }
+    matrix col = make_matrix(rows, cols);
+    for (i = 0; i < rows; ++i) {
+        int dx = -(size-1)/2 + i%size;
+        int dy = -(size-1)/2 + (i/size)%size;
+        int ic = i / (size*size);
+        for(j = 0; j < im.h; j += stride){
+            for(k = 0; k < im.w; k += stride){
+                float val = 0;
+                int iw = k + dx;
+                int ih = j + dy;
+                if(ih >= 0 && ih < im.h && iw >= 0 && iw < im.w){
+                    val = im.data[ic*im.w*im.h + ih*im.w + iw];
                 }
+                col.data[i*col.cols + (j/stride)*outw + k/stride] = val;
             }
         }
-
     }
-    // printf("did we make it boiz???\n");
-    return output;
+    return col;
 }
-
-
 
 // The reverse of im2col, add elements back into image
 // matrix col: column matrix to put back into image
@@ -107,46 +74,20 @@ matrix im2col(image im, int size, int stride)
 // image im: image to add elements back into
 void col2im(matrix col, int size, int stride, image im)
 {
-    int cur_row;
-    int cur_col;
-    int channel;
-
-    int filter_col;
-    int filter_row = 0;
-    int current_out_index = 0;
-
-    // TODO: 5.2 - add values into image im from the column matrix
-    for(channel = 0; channel < im.c; channel++) {
-        // for each square in the filter (starting at top left, => bottom right)
-        for(filter_row = -size / 2; filter_row < size / 2; filter_row++) {
-        
-            for(filter_col = - size / 2; filter_col < size / 2; filter_col++) {
-            
-                // go through all the rows
-                // iterations = OUTH but this makes indexing original img simpler
-                for(cur_row = 0; cur_row < im.w; cur_row += stride) {
-
-                    // go through a single row
-                    // iterations = OUTH but this makes indexing original img simpler
-                    for(cur_col = 0; cur_col < im.h; cur_col += stride) {
-                        // find center
-                        // center is at row_col, cur_col
-
-                        // find square of filter_index relstive to center
-                        // 3x3: pos from center
-                        int adjusted_col = cur_col + filter_col;
-                        int adjusted_row = cur_row + filter_row;
-
-                        // float get_pixel(image im, int x, int y, int c)
-                        // will handle the 0 case automatically #padding :)
-                        
-                        // void set_pixel(image im, int x, int y, int c, float v)
-                        float val = col.data[current_out_index];
-                        current_out_index++;
-                        if(adjusted_row >= 0 || adjusted_col >= 0 || adjusted_row < im.h || adjusted_col < im.w) {
-                            set_pixel(im, adjusted_col, adjusted_row, channel, val);
-                        }
-                    }
+    int i, j, k;
+    int outw = (im.w-1)/stride + 1;
+    int rows = im.c*size*size;
+    for (i = 0; i < rows; ++i) {
+        int dx = -(size-1)/2 + i%size;
+        int dy = -(size-1)/2 + (i/size)%size;
+        int ic = i / (size*size);
+        for(j = 0; j < im.h; j += stride){
+            for(k = 0; k < im.w; k += stride){
+                int iw = k + dx;
+                int ih = j + dy;
+                float val = col.data[i*col.cols + j/stride*outw + k/stride];
+                if(ih >= 0 && ih < im.h && iw >= 0 && iw < im.w){
+                    im.data[ic*im.w*im.h + ih*im.w + iw] += val;
                 }
             }
         }
@@ -166,6 +107,7 @@ matrix forward_convolutional_layer(layer l, matrix in)
     for(i = 0; i < in.rows; ++i){
         image example = float_to_image(in.data + i*in.cols, l.width, l.height, l.channels);
         matrix x = im2col(example, l.size, l.stride);
+        //if(i==0) printf("%d %d %d\n", l.w.rows, l.w.cols, x.cols);
         matrix wx = matmul(l.w, x);
         for(j = 0; j < wx.rows*wx.cols; ++j){
             out.data[i*out.cols + j] = wx.data[j];
@@ -200,16 +142,15 @@ void backward_convolutional_layer(layer l, matrix prev_delta)
     int outw = (l.width-1)/l.stride + 1;
     int outh = (l.height-1)/l.stride + 1;
 
-    gradient_matrix(out, l.activation, delta);
-    backward_convolutional_bias(delta, l.db);
-
-    if (l.batchnorm){
+    if(l.batchnorm){
         matrix dx = batch_normalize_backward(l, delta);
         free_matrix(delta);
         l.delta[0] = delta = dx;
     }
-
+    gradient_matrix(out, l.activation, delta);
+    backward_convolutional_bias(delta, l.db);
     int i;
+
     matrix wt = transpose_matrix(l.w);
     for(i = 0; i < in.rows; ++i){
         image example = float_to_image(in.data + i*in.cols, l.width, l.height, l.channels);
@@ -245,7 +186,7 @@ void backward_convolutional_layer(layer l, matrix prev_delta)
 // float decay: l2 regularization term
 void update_convolutional_layer(layer l, float rate, float momentum, float decay)
 {
-    // TODO: 5.3 Update the weights, similar to the connected layer.
+    // TODO
     axpy_matrix(rate, l.db, l.b);
     scal_matrix(momentum, l.db);
 
@@ -280,14 +221,7 @@ layer make_convolutional_layer(int w, int h, int c, int filters, int size, int s
     l.forward  = forward_convolutional_layer;
     l.backward = backward_convolutional_layer;
     l.update   = update_convolutional_layer;
-
-    // Zach: these may not be right
-    // TOASK: l.x represents input to batch norm process
-    // how is it different from l.input? 
-    l.x = calloc(1, sizeof(matrix)); 
-
-    // normalize(x, l.rolling_mean, l.rolling_variance, spatial);
-    // rolling mean and rolling variance are ? by # of filters
+    l.x = calloc(1, sizeof(matrix));
     l.rolling_mean = make_matrix(1, filters);
     l.rolling_variance = make_matrix(1, filters);
     return l;

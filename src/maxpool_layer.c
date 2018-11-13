@@ -4,100 +4,42 @@
 #include <float.h>
 #include "uwnet.h"
 
-/*
-Maxpooling is another core building block of convolutional neural networks. 
-Implementing maxpooling will be similar to implementing convolutions in some 
-ways, you will have to iterate over the image, process a window of pixels with 
-me fixed size, and in this case find the maximum value to put into the output.
 
-6.1 forward_maxpool_layer
-Write the forward method to find the maximum value in a given window size,
- moving by some strided amount between applications. Note: maxpooling happens
-  on each channel independently.
-
-6.2 backward_maxpool_layer
-The backward method will be similar to forward. Even though the window size
- may be large, only one element contributed to the error in the prediction 
- so we only backpropagate our deltas to a single element in the input per 
- window. Thus, you'll iterate through again and find the maximum value and 
- then backpropagate error to the appropriate element in prev_delta 
- corresponding to the position of the maximum element.
-*/
 // Run a maxpool layer on input
 // layer l: pointer to layer to run
 // matrix in: input to layer
 // returns: the result of running the layer
 matrix forward_maxpool_layer(layer l, matrix in)
 {
+    int i, j, k, m;
+    int dx, dy;
+
+    int pad = -(l.size-1)/2;
+
     int outw = (l.width-1)/l.stride + 1;
     int outh = (l.height-1)/l.stride + 1;
     matrix out = make_matrix(in.rows, outw*outh*l.channels);
-
-    // TODO: 6.1 - iterate over the input and fill in the output with max values
-
-    int cols;
-    int rows;
-    int pool_col;
-    int pool_row;
-    float max;
-    float next;
-
-    int channel;
-    int image;
-
-    // The images for a batch are stored in the successive rows of the input 
-    // matrix, you should be able to loop over each image, each channel of the 
-    // image, and each application of your filter (similar to your im2col function), 
-    // find max values in some range, and put them into the output.
-    int out_index = 0;
-    int offset;
-    // printf("size: %d", l.size);
-
-    // for each image (one row = one image)
-    for (image = 0; image < in.rows; image++) 
-    {
-        // for each channel in the image
-        for (channel = 0; channel < l.channels; channel++) 
-        {
-            // for each row in the image channel. We move 'stride' amount
-            for (rows = 0; rows < l.height; rows += l.stride)
-            {
-                // for each column in the row of the image channel. We move 'stride' amount
-                for (cols = 0; cols < l.width; cols += l.stride)
-                {
-                    // calculate one value
-
-                    offset = image * in.cols 
-                        + channel * l.width * l.height
-                        + rows * l.width 
-                        + cols;
-
-                    // printf("    offset: %d", offset);
-                    max = in.data[offset];
-
-                    for (pool_row = 0; pool_row < l.size; pool_row++)
-                    {
-                        for (pool_col = 0; pool_col < l.size; pool_col++)
-                        {
-                            if(rows + pool_row < l.height && cols + pool_col < l.width) {
-
-                                next = in.data[offset + pool_col + pool_row * l.width];
-                                if (next > max) 
-                                {
-                                    max = next;
-                                }
+    for(i = 0; i < in.rows; ++i){
+        for(j = 0; j < l.channels; ++j){
+            for(k = 0; k < outh; ++k){
+                for(m = 0; m < outw; ++m){
+                    float max = -FLT_MAX;
+                    for(dy = 0; dy < l.size; ++dy){
+                        for(dx = 0; dx < l.size; ++dx){
+                            int inx = m*l.stride + pad + dx;
+                            int iny = k*l.stride + pad + dy;
+                            int index = i*in.cols + j*l.height*l.width + iny*l.width + inx;
+                            if (inx >= 0 && inx < l.width && iny >= 0 && iny < l.height && in.data[index] > max){
+                                max = in.data[index];
                             }
                         }
                     }
-                    out.data[out_index] = max;
-                    out_index++;
+                    int index = i*out.cols + j*outh*outw + k*outw + m;
+                    out.data[index] = max;
                 }
             }
         }
     }
-    // printf("out_index %d\n", out_index);
-    // printf("dimension %d\n", out.rows * out.cols);
-    // printf("\n");
 
     l.in[0] = in;
     free_matrix(l.out[0]);
@@ -116,110 +58,37 @@ void backward_maxpool_layer(layer l, matrix prev_delta)
     matrix out   = l.out[0];
     matrix delta = l.delta[0];
 
+    int i, j, k, m;
+    int dx, dy;
+
+    int pad = -(l.size-1)/2;
+
     int outw = (l.width-1)/l.stride + 1;
     int outh = (l.height-1)/l.stride + 1;
-
-    // TODO: 6.2 - find the max values in the input again and fill in the
-    // corresponding delta with the delta from the output. This should be
-    // similar to the forward method in structure.
-
-    // printf("in %d, %d : delta %d, %d \n", in.rows / l.stride, in.cols / l.stride
-    //     , delta.rows, delta.cols);
-
-    int cols;
-    int rows;
-    int pool_col;
-    int pool_row;
-    float max;
-    float next;
-    int max_index;
-    // printf("delta.rows: %d\n", delta.rows);
-    // printf("delta.columns: %d\n", delta.cols);
-    //     printf("in.rows: %d\n", in.rows);
-    // printf("in.columns: %d\n", in.cols);
-    // printf("prev_delta.rows: %d\n", prev_delta.rows);
-    // printf("prev_delta.columns: %d\n", prev_delta.cols);
-    //  printf("out.rows: %d\n", out.rows);
-    // printf("out.columns: %d\n", out.cols);
-    // return;
-
-    int out_index = 0;
-    int image;
-    int offset;
-    int channel;
-    for (image = 0; image < in.rows; image++) 
-    {
-        for (channel = 0; channel < l.channels; channel++) 
-        {
-            for (rows = 0; rows < l.height; rows += l.stride)
-            {
-                for (cols = 0; cols < l.width; cols += l.stride)
-                {
-                    // calculate one value
-                    offset = image * in.cols 
-                        + channel * l.width * l.height
-                        + rows * l.width
-                        + cols;
-
-                    max = in.data[offset];
-                    max_index = offset;
-                    // printf("where\n");
-                    for (pool_row = 0; pool_row < l.size; pool_row++)
-                    {
-                        for (pool_col = 0; pool_col < l.size; pool_col++)
-                        {
-                                                // printf("is \n");
-
-                            if(rows + pool_row < l.height && cols + pool_col < l.width) {
-                                next = in.data[offset + pool_col + pool_row * l.width];
-                                                    // printf("the\n");
-
-                                if (next > max) 
-                                {
-                                    max_index = offset + pool_col + pool_row * l.width;
-                                    max = next;
-                                }
+    for(i = 0; i < in.rows; ++i){
+        for(j = 0; j < l.channels; ++j){
+            for(k = 0; k < outh; ++k){
+                for(m = 0; m < outw; ++m){
+                    float max = -FLT_MAX;
+                    int maxi = 0;
+                    for(dy = 0; dy < l.size; ++dy){
+                        for(dx = 0; dx < l.size; ++dx){
+                            int inx = m*l.stride + pad + dx;
+                            int iny = k*l.stride + pad + dy;
+                            int index = i*in.cols + j*l.height*l.width + iny*l.width + inx;
+                            if (inx >= 0 && inx < l.width && iny >= 0 && iny < l.height && in.data[index] > max){
+                                max = in.data[index];
+                                maxi = index;
                             }
+
                         }
                     }
-                    // in.data[max_index] = out.data[out_index];
-                    // fill in corresponding delta w delta from output
-                    prev_delta.data[max_index] += delta.data[out_index];
-                    out_index++;
-                                        // printf("issue?\n");
-
+                    int index = i*out.cols + j*outh*outw + k*outw + m;
+                    prev_delta.data[maxi] = delta.data[index];
                 }
             }
         }
     }
-    /*for (rows = 0; rows < delta.rows; rows++) 
-    {
-        for (cols = 0; cols < delta.cols; cols++)
-        { 
-            // printf("cur col: %d\n", cols);
-            // index of the upper left corner of the pool
-            int offset = (cols * l.stride) + (rows * l.stride * l.width);
-
-            max = in.data[offset];
-            max_index = offset;
-            for (pool_row = 0; pool_row < l.size; pool_row++)
-            {
-                for (pool_col = 0; pool_col < l.size; pool_col++)
-                {
-                    next = in.data[offset + pool_col + pool_row * l.width];
-                    if (next > max) 
-                    {
-                        max_index = offset + pool_col + pool_row * l.width;
-                        max = next;
-                    }
-                }
-            }
-            // fill in corresponding delta w delta from output
-            prev_delta.data[max_index] += delta.data[cols + rows * delta.cols];
-            
-        }
-    }*/
-
 }
 
 // Update maxpool layer

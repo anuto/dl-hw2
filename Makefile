@@ -3,7 +3,7 @@ OPENMP=0
 DEBUG=0
 
 OBJ=main.o image.o args.o test.o matrix.o list.o data.o classifier.o net.o connected_layer.o activations.o convolutional_layer.o maxpool_layer.o batch_norm.o
-EXOBJ=test.o
+EXOBJ=test.o 
 
 VPATH=./src/:./
 EXEC=uwnet

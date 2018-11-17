@@ -28,10 +28,20 @@ print
 
 print("making model...")
 batch = 128
-iters = 5000
+iters = 3000
 rate = .01
 momentum = .9
 decay = .005
+
+# Our best result: 
+# .1 learning rate
+# 5000 epochs
+# evaluating model...
+# ('training accuracy: %f', 0.741919994354248)
+# ('test accuracy:     %f', 0.6972000002861023)
+# Surprisingly, there was no obvious trend when changing the learning rates. 
+# All variations on the learning rate parameter capped out at about 60-70% accuracy
+# and about the same loss of 1.0
 
 m = conv_net()
 print("training...")
@@ -42,15 +52,4 @@ print
 print("evaluating model...")
 print("training accuracy: %f", accuracy_net(m, train))
 print("test accuracy:     %f", accuracy_net(m, test))
-
-# How accurate is the fully connected network vs the convnet when they use similar number of operations?
-# Why are you seeing these results? Speculate based on the information you've gathered and what you know about DL and ML.
-# Your answer:
-#
-
-# 8*27*1024 + 16*72*256 + 32*144*64 + 64*288*16 + 256*10
-# 1108480
-# 221696
-# 3072 input
-# 72 out
 

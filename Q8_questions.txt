@@ -1,0 +1,31 @@
+New Corpus
+
+What corpus did you choose? How many characters were in it?
+
+1. We initially wanted to do the bible, thinking that is easy to find, large, and interesting. Comparing raw file sizes though, HarryPotter.txt was 6.6M bytes and the bible was only 4.5M. So we switched doing Harry Potter fanfiction, thinking it'd be interesting to see how different JK Rowling vs. internet writing would be on the same subject (more or less). We went through archiveofourown.org, filtering from most popular to least, grabbing any fanfiction with > 50,000 words so it wouldn't take forever. We added about 7M bytes worth of fanfiction. The final character count was 7,173,923.
+
+
+What differences did you notice between the sentences generated with the new/vs old corpus?
+
+2. The Harry Potter (canon) corpus generated lots of stuff about doors. It otherwise chose a lot of filler text like 'he', 'was', &'and'. The Harry Potter fanfiction corpus generated plenty of filler text as well, but it also kept landing on some pretty funny terms like 'sucked', 'arrested', and 'ded'.
+
+Provide outputs for each sampling method on the new corpus (you can pick one temperature, but say what it was).
+
+3. At default temperature (1: although 'TEMPERATURE was default 0.5, the inference model set 'temperature=1':
+
+\includegraphic[]{samples_outputs.png}
+
+
+Words
+
+What new difficulties did you run into while training?
+
+1. Highly probably words largely dominated output. I guess words that are common (ex. 'the') were just significantly higher probability than anything else. We were able to mitigate this a little bit by jacking up the temperature. It was interesting, the temperature had to be much higher than the character based sequencing to see it making a difference. At < 3 we would still produce 'the the the ...' a ton. At 4.2 it became more varied.
+
+How large was your vocabulary?
+
+2. 9,913 (including a token representing unknown words, aka occurrence < 5 times)
+
+Did you find that different batch size, sequence length, and feature size and other hyperparameters were needed? If so, what worked best for you?
+
+3. No - batch size, sequence length, feature size, and most other hyperparameters didn't make a difference for us at the word level. The word level was very stubborn. Until we moved temperature to a high value, it would generally just repeat a single word. And once it produced different words, they were very random words. Fiddling with hyperparameters didn't help us achieve a better accuracy.
